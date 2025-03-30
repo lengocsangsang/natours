@@ -1,0 +1,5 @@
+{
+  "[jade]": {
+    "editor.defaultFormatter": "ducfilan.pug-formatter"
+  }
+}

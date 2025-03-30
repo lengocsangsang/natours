@@ -1,0 +1,116 @@
+//- We use pug to render html, css, images... to client side
+//- The below is how we set it up for our app:
+
+//- 1. This tells Express to use Pug as the templating engine.
+//- It allows you to render .pug files without specifying the file extension explicitly.
+//- app.set('view engine', 'pug');
+
+//- 2. This sets the directory where Express looks for Pug template files: FOLDER named "views"
+//- path.join(__dirname, "views") ensures that the path is correctly resolved, regardless of the operating system.
+//- app.set('views', path.join(__dirname, 'views'));
+
+
+//- If you want to use a structure from a pug file, "extends pugFileName" will help you.
+//- extends base: use everything from base.pug, except for block
+extends base
+
+//- if you create an individual file to contain a mixin (_reviewCard for ex.), and you want to use
+//- that mixin. You need to include it 
+include _reviewCard
+
+//- The below commmand: "block append block-name" will keep the content from base.pug and append script to it
+//- ONLY FOR TOUR PAGE, WE NEED BELOW SCRIPT AND LINK:
+block append head
+  script(src='https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js')
+  link(href='https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css' rel='stylesheet')
+
+
+
+
+
+
+//- Below is an internal mixin. You can use it without including it. It already there.
+mixin overviewBox(label, text, icon)
+  .overview-box__detail
+    svg.overview-box__icon
+      use(xlink:href=`/img/icons.svg#icon-${icon}`)
+    span.overview-box__label= label
+    span.overview-box__text= text
+
+//- From beginning we used structure of base.pug for this tour.pug.
+//- But wherever any block-name in base.pug defined, we can call it here.
+//- And inject in it with our code, for tour.pug only
+block content
+  section.section-header
+    .header__hero
+      .header__hero-overlay &nbsp;
+      img.header__hero-img(src=`/img/tours/${tour.imageCover}` alt=`${tour.name}`)
+
+    .heading-box
+      h1.heading-primary
+        span= `${tour.name} tour`
+      .heading-box__group
+        .heading-box__detail
+          svg.heading-box__icon
+            use(xlink:href='/img/icons.svg#icon-clock')
+          span.heading-box__text=`${tour.duration} days`
+        .heading-box__detail
+          svg.heading-box__icon
+            use(xlink:href='/img/icons.svg#icon-map-pin')
+          span.heading-box__text= tour.startLocation.description 
+
+  section.section-description
+    .overview-box
+      div
+        .overview-box__group
+          h2.heading-secondary.ma-bt-lg Quick facts
+
+          - const date = tour.startDates[0].toLocaleString('en-us', {month: 'long', year: 'numeric'})
+          +overviewBox('Next date', date , 'calendar')
+          +overviewBox('Difficulty', tour.difficulty , 'trending-up')
+          +overviewBox('Participants', `${tour.maxGroupSize} people` , 'user')
+          +overviewBox('Rating', `${tour.ratingsAverage} / 5` , 'star')
+
+        .overview-box__group
+          h2.heading-secondary.ma-bt-lg Your tour guides
+
+          each guide in tour.guides
+            .overview-box__detail
+              img.overview-box__img(src=`/img/users/${guide.photo}` alt=`${guide.name}`)
+              span.overview-box__label= guide.role === 'lead-guide' ? 'Lead guide' : 'Tour guide'
+              span.overview-box__text= guide.name
+
+
+    .description-box
+      h2.heading-secondary.ma-bt-lg= `About ${tour.name} tour`
+      - const paragraphs = tour.description.split("\n");
+      each p in paragraphs
+        p.description__text= p
+
+  section.section-pictures
+    each img, index in tour.images
+      .picture-box
+        img.picture-box__img(src=`/img/tours/${img}` alt=`The Park Camper Tour ${index + 1}`, class=`picture-box__img--${index + 1}`)
+
+  section.section-map
+    #map(data-locations =`${JSON.stringify(tour.locations)}`)
+
+  section.section-reviews
+    .reviews
+      each review in tour.reviews
+        +reviewCard(review)
+
+  section.section-cta
+    .cta
+      .cta__img.cta__img--logo
+        img(src='/img/logo-white.png' alt='Natours logo')
+      img.cta__img.cta__img--1(src=`/img/tours/${tour.images[1]}` alt='Tour picture')
+      img.cta__img.cta__img--2(src=`/img/tours/${tour.images[2]}` alt='Tour picture')
+      .cta__content
+        h2.heading-secondary What are you waiting for?
+        p.cta__text= `${tour.duration} days. 1 adventure. Infinite memories. Make it yours today!`
+
+        if user
+          button.btn.btn--green.span-all-rows#book-tour(data-tour-id=`${tour.id}`) Book tour now!
+        else
+          a.btn.btn--green.span-all-rows(href='/login') Log in to book tour now!
